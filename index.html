@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Responsive Image Gallery — Lightbox + Filters</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#06b6d4;
+      --muted:#94a3b8;
+      --glass: rgba(255,255,255,0.04);
+      --gap: 16px;
+      --radius: 12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg,var(--bg), #06111a);
+      color:#e6eef6; -webkit-font-smoothing:antialiased; padding:32px;
+    }
+
+    .wrap{max-width:1200px;margin:0 auto}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* controls */
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;color:inherit;cursor:pointer;font-size:14px}
+    .btn:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+    .btn.active{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#021022;border:none}
+
+    /* filters */
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap}
+    .filter-label{font-size:13px;color:var(--muted);margin-right:6px}
+
+    /* gallery grid */
+    .gallery{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px,1fr));gap:var(--gap)}
+    .card{position:relative;border-radius:var(--radius);overflow:hidden;cursor:pointer;min-height:160px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.25));transition:transform .35s ease, box-shadow .35s ease}
+    .card:hover{transform:translateY(-8px);box-shadow:0 24px 40px rgba(2,6,23,0.6)}
+    .card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease, filter .35s ease}
+    .card .meta{position:absolute;left:12px;bottom:12px;right:12px;background:linear-gradient(180deg,transparent, rgba(0,0,0,0.6));padding:8px;border-radius:10px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+    .meta .title{font-weight:600;font-size:14px}
+    .meta .cat{font-size:12px;color: #bcd7de;background:rgba(255,255,255,0.04);padding:6px 8px;border-radius:999px}
+
+    /* hover overlay icons */
+    .lens{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.9);opacity:0;pointer-events:none;transition:opacity .25s ease}
+    .card:hover .lens{opacity:1}
+    .lens .circle{backdrop-filter:blur(6px);background:rgba(0,0,0,0.35);padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,0.06)}
+
+    /* lightbox */
+    .lightbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(2,6,23,0.75), rgba(2,6,23,0.95));z-index:9999;padding:30px}
+    .lightbox.open{display:flex}
+    .lightbox .frame{max-width:1100px;width:100%;max-height:90vh;background:transparent;border-radius:12px;display:flex;gap:12px;align-items:center}
+    .lightbox img{max-width:calc(100% - 260px);max-height:80vh;object-fit:contain;border-radius:12px;box-shadow:0 40px 80px rgba(2,6,23,0.7)}
+    .panel{width:240px;color:var(--muted);padding:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px}
+    .panel h3{margin:0 0 10px 0;color:#fff}
+    .navs{display:flex;gap:8px;margin-top:12px}
+    .icon-btn{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    .close{position:absolute;right:28px;top:28px;font-size:20px;padding:10px;border-radius:10px;cursor:pointer;background:rgba(255,255,255,0.02)}
+
+    /* filter controls for CSS filters */
+    .filters-controls{display:flex;flex-direction:column;gap:8px}
+    .range{width:100%}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* responsive tweaks */
+    @media (max-width:880px){
+      .lightbox img{max-width:calc(100% - 160px)}
+      .panel{display:none}
+    }
+    @media (max-width:520px){
+      body{padding:18px}
+      header{flex-direction:column;align-items:flex-start;gap:12px}
+      .gallery{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+    }
+
+    /* subtle animations */
+    .fade-in{animation:fadein .45s ease both}
+    @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Stellar Gallery</h1>
+        <p class="lead">Responsive gallery with lightbox, categories, and image filters — fully client-side.</p>
+      </div>
+      <div class="controls">
+        <div class="filter-row" role="tablist" aria-label="Categories">
+          <button class="btn active" data-filter="all">All</button>
+          <button class="btn" data-filter="nature">Nature</button>
+          <button class="btn" data-filter="city">City</button>
+          <button class="btn" data-filter="people">People</button>
+          <button class="btn" data-filter="abstract">Abstract</button>
+        </div>
+        <div style="width:1px;height:28px;background:rgba(255,255,255,0.03);margin-left:10px"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:10px">
+          <label class="filter-label">Filter style</label>
+          <select id="preset" class="btn" aria-label="Preset filters">
+            <option value="none">None</option>
+            <option value="bw">Black & White</option>
+            <option value="warm">Warm</option>
+            <option value="cold">Cool</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="gallery" id="gallery" aria-live="polite">
+        <!-- cards: each has data-category and data-title, images from picsum.photos for demo -->
+
+        <article class="card fade-in" data-category="nature" data-title="Misty Lake at Dawn">
+          <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=60" alt="Misty Lake" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Misty Lake at Dawn</div><div class="cat">Nature</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="city" data-title="Neon Street Night">
+          <img src="https://images.unsplash.com/photo-1499346030926-9a72daac6c63?auto=format&fit=crop&w=1200&q=60" alt="Neon street" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Neon Street Night</div><div class="cat">City</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="people" data-title="Portrait Smile">
+          <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1200&q=60" alt="People portrait" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Portrait Smile</div><div class="cat">People</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="abstract" data-title="Color Swirl">
+          <img src="https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=60" alt="Abstract" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Color Swirl</div><div class="cat">Abstract</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="nature" data-title="Sunlit Forest">
+          <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=60&ixlib=rb-4.0.3" alt="Forest" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Sunlit Forest</div><div class="cat">Nature</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="city" data-title="Rooftop Sunset">
+          <img src="https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=1200&q=60" alt="Rooftop" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Rooftop Sunset</div><div class="cat">City</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="people" data-title="Candid Laugh">
+          <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1200&q=60" alt="Candid" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Candid Laugh</div><div class="cat">People</div></div>
+        </article>
+
+        <article class="card fade-in" data-category="abstract" data-title="Geometric Light">
+          <img src="https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1200&q=60" alt="Geometric" loading="lazy">
+          <div class="lens"><div class="circle">🔍</div></div>
+          <div class="meta"><div class="title">Geometric Light</div><div class="cat">Abstract</div></div>
+        </article>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Lightbox markup -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button class="close" id="closeBtn" aria-label="Close">✕</button>
+    <div class="frame">
+      <img id="lbImg" src="" alt=""/>
+      <aside class="panel">
+        <h3 id="lbTitle">Title</h3>
+        <div id="lbMeta" class="small">Category</div>
+
+        <div class="navs">
+          <button class="icon-btn" id="prevBtn" aria-label="Previous image">◀</button>
+          <button class="icon-btn" id="nextBtn" aria-label="Next image">▶</button>
+        </div>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+        <div class="filters-controls">
+          <div class="small">Adjust Filters</div>
+          <label class="small">Blur: <input id="fBlur" class="range" type="range" min="0" max="10" value="0"></label>
+          <label class="small">Saturation: <input id="fSat" class="range" type="range" min="0" max="200" value="100"></label>
+          <label class="small">Brightness: <input id="fBright" class="range" type="range" min="50" max="150" value="100"></label>
+          <label class="small">Contrast: <input id="fCont" class="range" type="range" min="50" max="200" value="100"></label>
+          <label class="small">Grain (noise): <input id="fGrain" class="range" type="range" min="0" max="60" value="0"></label>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="resetFilters">Reset</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;font-size:13px;color:var(--muted)">Tip: Use arrow keys ← → to navigate, Esc to close.</div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // --- Setup ---
+    const gallery = document.getElementById('gallery');
+    const cards = Array.from(gallery.querySelectorAll('.card'));
+    const filters = document.querySelectorAll('[data-filter]');
+    const preset = document.getElementById('preset');
+
+    // Lightbox elements
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    const lbTitle = document.getElementById('lbTitle');
+    const lbMeta = document.getElementById('lbMeta');
+    const closeBtn = document.getElementById('closeBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let currentIndex = 0;
+    let visibleCards = cards.slice();
+
+    // --- Category filtering ---
+    function applyCategory(cat){
+      filters.forEach(b=>b.classList.toggle('active', b.dataset.filter===cat));
+      visibleCards = (cat==='all') ? cards.slice() : cards.filter(c=>c.dataset.category===cat);
+      // show/hide cards
+      cards.forEach(c=>{
+        const show = (cat==='all') || c.dataset.category===cat;
+        c.style.display = show? 'block' : 'none';
+      });
+    }
+
+    filters.forEach(btn=>{
+      btn.addEventListener('click', ()=> applyCategory(btn.dataset.filter));
+    });
+
+    // default
+    applyCategory('all');
+
+    // --- Lightbox open/close ---
+    function openLightbox(index){
+      currentIndex = index;
+      const card = visibleCards[currentIndex];
+      if(!card) return;
+      const img = card.querySelector('img');
+      lbImg.src = img.src;
+      lbImg.alt = img.alt || '';
+      lbTitle.textContent = card.dataset.title || 'Untitled';
+      lbMeta.textContent = card.dataset.category || '';
+      // reset filters UI & css
+      resetFilterUI();
+      applyFilterToLB();
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // focus for keyboard
+      closeBtn.focus();
+    }
+
+    function closeLightbox(){
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // Clicking a card
+    cards.forEach((c, idx)=>{
+      c.addEventListener('click', ()=>{
+        // compute index among visibleCards at time of click
+        const filtered = visibleCards = (Array.from(gallery.querySelectorAll('.card'))).filter(x=>x.style.display!=='none');
+        const index = filtered.indexOf(c);
+        visibleCards = filtered; // update
+        openLightbox(index);
+      });
+    });
+
+    closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLightbox(); });
+
+    // --- Prev / Next ---
+    function showPrev(){ if(visibleCards.length===0) return; currentIndex=(currentIndex-1+visibleCards.length)%visibleCards.length; openLightbox(currentIndex);} 
+    function showNext(){ if(visibleCards.length===0) return; currentIndex=(currentIndex+1)%visibleCards.length; openLightbox(currentIndex);} 
+    prevBtn.addEventListener('click', (e)=>{ e.stopPropagation(); showPrev(); });
+    nextBtn.addEventListener('click', (e)=>{ e.stopPropagation(); showNext(); });
+
+    // keyboard controls
+    window.addEventListener('keydown', (e)=>{
+      if(!lightbox.classList.contains('open')) return;
+      if(e.key==='ArrowLeft') showPrev();
+      if(e.key==='ArrowRight') showNext();
+      if(e.key==='Escape') closeLightbox();
+    });
+
+    // --- Image filter controls (applied to lightbox image) ---
+    const fBlur = document.getElementById('fBlur');
+    const fSat = document.getElementById('fSat');
+    const fBright = document.getElementById('fBright');
+    const fCont = document.getElementById('fCont');
+    const fGrain = document.getElementById('fGrain');
+    const resetFiltersBtn = document.getElementById('resetFilters');
+
+    function applyFilterToLB(){
+      const blur = fBlur.value;
+      const sat = fSat.value;
+      const bright = fBright.value;
+      const cont = fCont.value;
+      const grain = fGrain.value;
+      // base filters
+      const filters = `blur(${blur}px) saturate(${sat}%) brightness(${bright}%) contrast(${cont}%)`;
+      lbImg.style.filter = filters;
+      // grain overlay: use CSS background trick on panel? We'll simulate by adding a pseudo-noise using box-shadow on img element (subtle)
+      if(grain>0){
+        lbImg.style.boxShadow = `0 0 ${Math.min(60,grain)}px rgba(0,0,0,0.35)`;
+      } else {
+        lbImg.style.boxShadow = '';
+      }
+    }
+
+    [fBlur,fSat,fBright,fCont,fGrain].forEach(i=>i.addEventListener('input', applyFilterToLB));
+    resetFiltersBtn.addEventListener('click', ()=>{ resetFilterUI(); applyFilterToLB(); });
+    function resetFilterUI(){ fBlur.value=0; fSat.value=100; fBright.value=100; fCont.value=100; fGrain.value=0; }
+
+    // Preset filters (global) — applies to gallery images
+    preset.addEventListener('change', ()=>{
+      const val = preset.value;
+      let css = '';
+      if(val==='bw') css = 'grayscale(100%) contrast(110%)';
+      if(val==='warm') css = 'sepia(20%) saturate(120%) hue-rotate(-10deg)';
+      if(val==='cold') css = 'saturate(110%) hue-rotate(10deg) contrast(105%)';
+      gallery.querySelectorAll('img').forEach(img=>img.style.filter = css);
+    });
+
+    // Accessibility: focus trap inside lightbox (basic)
+    document.addEventListener('focusin', (e)=>{
+      if(!lightbox.classList.contains('open')) return;
+      if(!lightbox.contains(e.target)) { e.stopPropagation(); closeBtn.focus(); }
+    });
+
+    // Small optimization: lazy load via IntersectionObserver (nice-to-have)
+    if('IntersectionObserver' in window){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(en=>{
+          if(en.isIntersecting){ const img = en.target.querySelector('img'); if(img.dataset.src){ img.src = img.dataset.src; img.removeAttribute('data-src'); } io.unobserve(en.target); }
+        });
+      },{rootMargin:'200px'});
+      document.querySelectorAll('.card').forEach(c=>io.observe(c));
+    }
+
+    // small polish: animate gallery load
+    window.addEventListener('load', ()=>{
+      document.querySelectorAll('.card').forEach((c,i)=>{ c.style.animationDelay = (i*40)+'ms'; });
+    });
+
+  </script>
+</body>
+</html>
