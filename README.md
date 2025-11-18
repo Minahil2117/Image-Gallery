@@ -20,7 +20,7 @@ This project is a single-file application, making deployment extremely simple.
 
 ## 🚀 Demo
 
-[Live Demo](#)  https://minahil2117.github.io/Image-Gallery/
+[Live Demo](#)   https://minahil2117.github.io/Image-Gallery/
 
 ### Prerequisites
 
