@@ -18,6 +18,10 @@ A responsive image gallery built using plain HTML, CSS (minimal), and vanilla Ja
 
 This project is a single-file application, making deployment extremely simple.
 
+## 🚀 Demo
+
+[Live Demo](#)  https://minahil2117.github.io/Image-Gallery/
+
 ### Prerequisites
 
 You need a modern web browser to view the gallery.
@@ -60,4 +64,27 @@ The gallery uses placeholder images from `images.unsplash.com`. To add your own 
 1.  Locate the `<section class="gallery" id="gallery">` in `index.html`.
 2.  Each image is defined by an `<article class="card">` block.
 3.  Update the **`src`** attribute of the `<img>` tag with your image URL.
-4.  Update the **`data-category`** (e.g., `"nature"`) and **`data-title`** (e.g., `"Misty Lake at Dawn"`) attributes to categorize and title your image correctly.
+4.  Update the **`data-category`** (e.g., `"nature"`) and **`data-title`** (e.g., `"Misty Lake at Dawn"`) attributes to categorize and title your image correctly.## 👨‍💻 Author
+
+**Minahil Fatima**
+- GitHub: [https://github.com/Minahil2117]
+- LinkedIn: [www.linkedin.com/in/minahil-fatima17]
+
+## 🙏 Acknowledgments
+
+- Sample image files from [Unsplash](https://unsplash.com/)
+- Inspired by modern music player designs
+- Icons using Unicode emoji characters
+
+## 📞 ContactHave questions or suggestions? Feel free to reach out!
+
+- Email: fminahil862@gmail.com
+
+## ⭐ Show Your Support
+
+Give a ⭐️ if you like this project!
+
+---
+
+Made with ❤️ and JavaScript
+
